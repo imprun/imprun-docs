@@ -1,0 +1,67 @@
+---
+title: 'API 키 발급 및 설정'
+description: 'imprun API를 사용하기 위한 기본 설정'
+---
+
+## 개요
+
+imprun API를 사용하려면 API 키가 필요합니다. 콘솔에서 API 키를 발급받고, 요청에 포함시켜 인증합니다.
+
+## 1단계: 회원가입 및 로그인
+
+1. [imprun 콘솔](https://imprun.dev/console)에 접속합니다.
+2. 이메일로 회원가입하거나 로그인합니다.
+3. **API 키** 메뉴로 이동합니다.
+
+## 2단계: API 키 발급
+
+1. **새 API 키 생성** 버튼을 클릭합니다.
+2. 키 이름 (예: "홈택스 자동화")을 입력합니다.
+3. **생성** 버튼을 클릭합니다.
+4. 발급된 API 키를 복사하여 안전한 곳에 저장합니다.
+
+<Warning>
+API 키는 비밀번호처럼 관리하세요. 절대 공개 저장소나 클라이언트 측 코드에 포함하지 마세요.
+</Warning>
+
+## 3단계: API 키 설정
+
+### 환경 변수로 설정
+
+```bash
+export IMPRUN_API_KEY="your-api-key-here"
+```
+
+### 또는 설정 파일로 저장
+
+```
+~/.imprun/config.json
+```
+
+```json
+{
+  "apiKey": "your-api-key-here",
+  "baseUrl": "https://api.imprun.dev"
+}
+```
+
+## API 호출
+
+모든 API 요청에 API 키를 `X-API-Key` 헤더로 포함시킵니다:
+
+```bash
+curl -X POST https://api.imprun.dev/v2/workflows \
+  -H "X-API-Key: your-api-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{...}'
+```
+
+## 요금
+
+- **1회 호출** 시 사용한 API에 따라 과금됩니다.
+- **선불 결제** 방식으로 미리 충전 후 사용합니다.
+- 자세한 요금은 [요금 페이지](../pricing)에서 확인하세요.
+
+## 다음 단계
+
+[첫 요청 만들기](./first-request)에서 실제로 API를 호출해보세요.
