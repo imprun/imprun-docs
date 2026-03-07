@@ -23,8 +23,8 @@ curl -X POST https://api.imprun.dev/v2/workflows \
 ```json
 {
   "type": "scraping",  // 또는 "document_parsing"
-  "siteCode": "HOMETAX",  // 또는 "WEHAGO" 등
   "params": {
+    "siteCode": "HOMETAX",  // 또는 "WEHAGO" 등
     // 각 타입별 파라미터
   }
 }
@@ -69,9 +69,9 @@ curl -X POST https://api.imprun.dev/v2/workflows \
 ```json
 {
   "type": "scraping",
-  "siteCode": "HOMETAX",
   "params": {
-    "action": "get_business_info|get_sales_stats|get_purchase_stats|get_vat_info",
+    "siteCode": "HOMETAX",
+    "function": "get_business_info|get_sales_stats|get_purchase_stats|get_vat_info",
     "credentialId": "cred_...",
     "year": 2025,
     "month": 3
@@ -84,8 +84,8 @@ curl -X POST https://api.imprun.dev/v2/workflows \
 ```json
 {
   "type": "scraping",
-  "siteCode": "WEHAGO",
   "params": {
+    "siteCode": "WEHAGO",
     "credentialId": "cred_...",  // 또는 sessionToken
     "group": "financial|transactions",
     "endpoint": "balance-sheet|sales-report|...",
@@ -134,9 +134,9 @@ curl -X POST https://api.imprun.dev/v2/workflows \
   -H "Content-Type: application/json" \
   -d '{
     "type": "scraping",
-    "siteCode": "HOMETAX",
     "params": {
-      "action": "get_business_info",
+      "siteCode": "HOMETAX",
+      "function": "get_business_info",
       "credentialId": "cred_abc123",
       "year": 2025
     }
@@ -154,8 +154,8 @@ const response = await fetch('https://api.imprun.dev/v2/workflows', {
   },
   body: JSON.stringify({
     type: 'scraping',
-    siteCode: 'WEHAGO',
     params: {
+      siteCode: 'WEHAGO',
       credentialId: 'cred_abc123',
       group: 'financial',
       endpoint: 'balance-sheet'
@@ -179,9 +179,9 @@ headers = {
 
 payload = {
   'type': 'scraping',
-  'siteCode': 'HOMETAX',
   'params': {
-    'action': 'get_business_info',
+    'siteCode': 'HOMETAX',
+    'function': 'get_business_info',
     'credentialId': 'cred_abc123',
     'year': 2025
   }

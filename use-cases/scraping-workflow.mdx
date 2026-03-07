@@ -36,8 +36,8 @@ curl -X POST https://api.imprun.dev/v2/workflows \
   -H "Content-Type: application/json" \
   -d '{
     "type": "scraping",
-    "siteCode": "WEHAGO",
     "params": {
+      "siteCode": "WEHAGO",
       "credentialId": "cred_abc123xyz",
       "group": "financial",
       "endpoint": "balance-sheet",
@@ -108,8 +108,8 @@ curl -X POST https://api.imprun.dev/v2/workflows \
   -H "Content-Type: application/json" \
   -d '{
     "type": "scraping",
-    "siteCode": "WEHAGO",
     "params": {
+      "siteCode": "WEHAGO",
       "sessionToken": "sess_xyz789abc",  // 이전 요청에서 받은 토큰
       "group": "financial",
       "endpoint": "balance-sheet"
@@ -134,8 +134,8 @@ curl -X POST https://api.imprun.dev/v2/workflows \
   -H "Content-Type: application/json" \
   -d '{
     "type": "scraping",
-    "siteCode": "WEHAGO",
     "params": {
+      "siteCode": "WEHAGO",
       "credentialId": "cred_abc123xyz",
       "group": "financial",
       "endpoint": "sales-report",

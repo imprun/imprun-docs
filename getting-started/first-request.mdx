@@ -16,8 +16,8 @@ X-API-Key: your-api-key
 
 {
   "type": "scraping",
-  "siteCode": "HOMETAX",  // 또는 WEHAGO, DOCUMENT_PARSER 등
   "params": {
+    "siteCode": "HOMETAX",  // 또는 WEHAGO, DOCUMENT_PARSER 등
     // 각 API에 따라 다른 파라미터
   }
 }
@@ -33,10 +33,10 @@ curl -X POST https://api.imprun.dev/v2/workflows \
   -H "Content-Type: application/json" \
   -d '{
     "type": "scraping",
-    "siteCode": "HOMETAX",
     "params": {
-      "action": "get_business_info",
-      "business_number": "1234567890"
+      "siteCode": "HOMETAX",
+      "function": "get_business_info",
+      "credentialId": "cred_abc123xyz"
     }
   }'
 ```
@@ -61,8 +61,8 @@ curl -X POST https://api.imprun.dev/v2/workflows \
   -H "Content-Type: application/json" \
   -d '{
     "type": "scraping",
-    "siteCode": "WEHAGO",
     "params": {
+      "siteCode": "WEHAGO",
       "credentialId": "cred_xyz789",
       "group": "financial",
       "endpoint": "balance-sheet",
@@ -82,7 +82,7 @@ curl -X POST https://api.imprun.dev/v2/workflows \
   -d '{
     "type": "document_parsing",
     "params": {
-      "document_type": "land",
+      "documentType": "land",
       "imageUrl": "https://..."
     }
   }'

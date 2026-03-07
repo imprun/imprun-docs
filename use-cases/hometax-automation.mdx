@@ -41,9 +41,9 @@ curl -X POST https://api.imprun.dev/v2/workflows \
   -H "Content-Type: application/json" \
   -d '{
     "type": "scraping",
-    "siteCode": "HOMETAX",
     "params": {
-      "action": "get_business_info",
+      "siteCode": "HOMETAX",
+      "function": "get_business_info",
       "credentialId": "cred_abc123xyz",
       "year": 2025
     }
@@ -81,9 +81,9 @@ curl -X POST https://api.imprun.dev/v2/workflows \
   -H "Content-Type: application/json" \
   -d '{
     "type": "scraping",
-    "siteCode": "HOMETAX",
     "params": {
-      "action": "get_sales_stats",
+      "siteCode": "HOMETAX",
+      "function": "get_sales_stats",
       "credentialId": "cred_abc123xyz",
       "year": 2025,
       "month": 3
