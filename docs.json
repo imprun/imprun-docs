@@ -60,6 +60,12 @@
             ]
           },
           {
+            "group": "인증서 릴레이",
+            "pages": [
+              "api-reference/cert-relay"
+            ]
+          },
+          {
             "group": "PDF 파싱",
             "pages": [
               "api-reference/document-parser",
