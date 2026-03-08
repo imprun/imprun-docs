@@ -1,0 +1,117 @@
+---
+title: '홈택스 자동화'
+description: '국세청 홈택스에서 자동으로 세금 정보를 조회하세요'
+---
+
+## 개요
+
+imprun의 홈택스 자동화 기능으로:
+
+- 📋 사업자등록 정보 조회
+- 💰 매출/매입 통계 수집
+- 📊 세금 계산 자동화
+- 💾 조회 결과 자동 저장
+
+매번 홈택스에 직접 접속할 필요 없이, API 호출로 모든 정보를 얻을 수 있습니다.
+
+## 사전 준비
+
+1. [API 키 발급](../getting-started/setup)
+2. 홈택스 로그인 자격증명 등록
+3. 최소 크레딧 ₩5,000 충전
+
+## 사용 절차
+
+### 1단계: 자격증명 등록
+
+콘솔에서 홈택스 계정을 등록합니다:
+
+1. [imprun 콘솔](https://imprun.dev/console) → **자격증명**
+2. **새 자격증명 추가** → **홈택스**
+3. 홈택스 ID/PW 입력
+4. **저장** → `credential_id` 확인
+
+### 2단계: 자동화 시작
+
+API를 호출하여 정보를 조회합니다:
+
+```bash
+curl -X POST https://api.imprun.dev/v2/workflows \
+  -H "X-API-Key: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "scraping",
+    "params": {
+      "siteCode": "HOMETAX",
+      "function": "get_business_info",
+      "credentialId": "cred_abc123xyz",
+      "year": 2025
+    }
+  }'
+```
+
+### 3단계: 결과 확인
+
+응답에서 받은 워크플로우 ID로 진행 상황을 추적합니다:
+
+```json
+{
+  "id": "wf_xyz789abc",
+  "status": "RUNNING",
+  "progressUrl": "https://imprun.dev/console/workflows/wf_xyz789abc"
+}
+```
+
+콘솔의 `progressUrl`을 방문하면 실시간으로 진행 상황을 확인할 수 있습니다.
+
+## 조회 가능한 정보
+
+| 항목 | 설명 | API 매개변수 |
+|------|------|-----------|
+| 사업자등록정보 | 대표명, 업종, 주소 등 | `action: get_business_info` |
+| 매출통계 | 월별/분기별 매출 | `action: get_sales_stats` |
+| 매입통계 | 월별/분기별 매입 | `action: get_purchase_stats` |
+| 부가세 신고 | 부가세액, 세금 계산 | `action: get_vat_info` |
+
+## 예제: 월별 매출 조회
+
+```bash
+curl -X POST https://api.imprun.dev/v2/workflows \
+  -H "X-API-Key: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "scraping",
+    "params": {
+      "siteCode": "HOMETAX",
+      "function": "get_sales_stats",
+      "credentialId": "cred_abc123xyz",
+      "year": 2025,
+      "month": 3
+    }
+  }'
+```
+
+**결과 예시:**
+```json
+{
+  "year": 2025,
+  "month": 3,
+  "totalSales": 50000000,
+  "salesByCategory": {
+    "product": 30000000,
+    "service": 20000000
+  }
+}
+```
+
+## 비용
+
+- **기본 조회 (사업자등록정보)**: ₩500
+- **매출/매입 통계**: ₩1,000
+- **부가세 신고 정보**: ₩2,000
+
+자동화로 시간을 절약하고, 세금 신고를 더 정확하게 준비하세요!
+
+## 다음 단계
+
+[웨하고 스크래핑](./scraping-workflow)에서 다른 웹사이트도 자동화하는 방법을 알아보세요.

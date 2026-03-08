@@ -1,0 +1,204 @@
+---
+title: 'Temporal Workflows API'
+description: '/v2/workflows 엔드포인트 스펙'
+---
+
+## 엔드포인트
+
+```
+POST /v2/workflows
+```
+
+## 인증
+
+모든 요청에 `X-API-Key` 헤더 필수:
+
+```bash
+curl -X POST https://api.imprun.dev/v2/workflows \
+  -H "X-API-Key: your-api-key-here"
+```
+
+## 요청 본문
+
+```json
+{
+  "type": "scraping",  // 또는 "document_parsing"
+  "params": {
+    "siteCode": "HOMETAX",  // 또는 "WEHAGO" 등
+    // 각 타입별 파라미터
+  }
+}
+```
+
+## 응답
+
+### 성공 (200 OK)
+
+```json
+{
+  "id": "wf_abc123xyz",
+  "status": "RUNNING",
+  "createdAt": "2026-03-07T10:20:00Z",
+  "progressUrl": "https://imprun.dev/console/workflows/wf_abc123xyz"
+}
+```
+
+### 실패
+
+```json
+{
+  "error": "Invalid request",
+  "message": "credentialId is required",
+  "code": "VALIDATION_ERROR"
+}
+```
+
+## 워크플로우 상태
+
+| 상태 | 설명 |
+|------|------|
+| `RUNNING` | 실행 중 |
+| `SUCCEEDED` | 성공 완료 |
+| `FAILED` | 실패 |
+| `TIMED_OUT` | 타임아웃 |
+
+## Scraping 요청
+
+### 홈택스
+
+```json
+{
+  "type": "scraping",
+  "params": {
+    "siteCode": "HOMETAX",
+    "function": "get_business_info|get_sales_stats|get_purchase_stats|get_vat_info",
+    "credentialId": "cred_...",
+    "year": 2025,
+    "month": 3
+  }
+}
+```
+
+### 웨하고
+
+```json
+{
+  "type": "scraping",
+  "params": {
+    "siteCode": "WEHAGO",
+    "credentialId": "cred_...",  // 또는 sessionToken
+    "group": "financial|transactions",
+    "endpoint": "balance-sheet|sales-report|...",
+    "period": "2025-03"
+  }
+}
+```
+
+## Document Parsing 요청
+
+```json
+{
+  "type": "document_parsing",
+  "params": {
+    "documentType": "land|building|aggregate_building",
+    "imageUrl": "https://...",  // 또는 imageBase64
+    "priority": "normal|high"
+  }
+}
+```
+
+## 에러 코드
+
+| 코드 | 메시지 | 해결 |
+|------|--------|------|
+| `INVALID_API_KEY` | 유효하지 않은 API 키 | API 키 확인 |
+| `INSUFFICIENT_CREDIT` | 크레딧 부족 | 크레딧 충전 |
+| `CREDENTIAL_EXPIRED` | 자격증명 만료 | 자격증명 재등록 |
+| `AUTHENTICATION_FAILED` | 로그인 실패 | 자격증명 확인 |
+| `TIMEOUT` | 타임아웃 | 나중에 재시도 |
+
+## 속도 제한
+
+- **1초당 최대 10개** 요청
+- **1시간당 최대 10,000개** 요청
+
+제한 초과 시 `429 Too Many Requests` 응답.
+
+## 예제
+
+### cURL
+
+```bash
+curl -X POST https://api.imprun.dev/v2/workflows \
+  -H "X-API-Key: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "scraping",
+    "params": {
+      "siteCode": "HOMETAX",
+      "function": "get_business_info",
+      "credentialId": "cred_abc123",
+      "year": 2025
+    }
+  }'
+```
+
+### JavaScript
+
+```javascript
+const response = await fetch('https://api.imprun.dev/v2/workflows', {
+  method: 'POST',
+  headers: {
+    'X-API-Key': 'your-api-key',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    type: 'scraping',
+    params: {
+      siteCode: 'WEHAGO',
+      credentialId: 'cred_abc123',
+      group: 'financial',
+      endpoint: 'balance-sheet'
+    }
+  })
+});
+
+const data = await response.json();
+console.log(data.id);  // 워크플로우 ID
+```
+
+### Python
+
+```python
+import requests
+
+headers = {
+  'X-API-Key': 'your-api-key',
+  'Content-Type': 'application/json'
+}
+
+payload = {
+  'type': 'scraping',
+  'params': {
+    'siteCode': 'HOMETAX',
+    'function': 'get_business_info',
+    'credentialId': 'cred_abc123',
+    'year': 2025
+  }
+}
+
+response = requests.post(
+  'https://api.imprun.dev/v2/workflows',
+  headers=headers,
+  json=payload
+)
+
+data = response.json()
+print(data['id'])  # 워크플로우 ID
+```
+
+## 다음 단계
+
+- [홈택스 자동화](../use-cases/hometax-automation)
+- [문서 파싱](../use-cases/document-parsing)
+- [웨하고 스크래핑](../use-cases/scraping-workflow)

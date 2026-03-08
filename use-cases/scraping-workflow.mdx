@@ -1,0 +1,206 @@
+---
+title: '웨하고 웹 스크래핑'
+description: '웨하고 및 다양한 웹사이트에서 자동으로 데이터를 수집하세요'
+---
+
+## 개요
+
+imprun의 웹 스크래핑으로:
+
+- 🌐 웨하고 (Wehago) 데이터 자동 수집
+- 💼 영업 정보, 거래 내역 추출
+- 🔄 자동 로그인 및 세션 관리
+- 📈 반복적인 데이터 수집 자동화
+
+## 지원 웹사이트
+
+| 사이트 | 설명 | API 코드 |
+|--------|------|---------|
+| **웨하고** | 영업 및 거래 정보 | `WEHAGO` |
+| **기타 사이트** | 커스텀 스크래핑 | 요청 |
+
+## 웨하고 스크래핑
+
+### 1단계: 계정 등록
+
+1. [imprun 콘솔](https://imprun.dev/console) → **자격증명**
+2. **새 자격증명 추가** → **웨하고**
+3. 웨하고 계정 (로그인 ID, PW) 입력
+4. **저장** → `credential_id` 복사
+
+### 2단계: 데이터 조회
+
+```bash
+curl -X POST https://api.imprun.dev/v2/workflows \
+  -H "X-API-Key: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "scraping",
+    "params": {
+      "siteCode": "WEHAGO",
+      "credentialId": "cred_abc123xyz",
+      "group": "financial",
+      "endpoint": "balance-sheet",
+      "period": "2025-03"
+    }
+  }'
+```
+
+### 3단계: 결과 확인
+
+```json
+{
+  "id": "wf_scrape123",
+  "status": "SUCCEEDED",
+  "result": {
+    "sales": 5000000,
+    "expenses": 2000000,
+    "netProfit": 3000000,
+    "currency": "KRW"
+  }
+}
+```
+
+## 조회 가능한 데이터
+
+### 📊 재무 정보 (group: `financial`)
+
+| 엔드포인트 | 설명 | API 값 |
+|-----------|------|--------|
+| 잔액 현황 | 계좌 잔액 조회 | `balance-sheet` |
+| 매출/매입 | 거래 내역 | `sales-report` |
+| 세금 계산 | 세금 계산서 | `tax-calculation` |
+
+**예제:**
+```bash
+{
+  "group": "financial",
+  "endpoint": "balance-sheet",
+  "period": "2025-03"
+}
+```
+
+### 💳 거래 정보 (group: `transactions`)
+
+| 엔드포인트 | 설명 | API 값 |
+|-----------|------|--------|
+| 입금 거래 | 입금 내역 | `inbound` |
+| 출금 거래 | 출금 내역 | `outbound` |
+| 전체 거래 | 모든 거래 | `all` |
+
+**예제:**
+```bash
+{
+  "group": "transactions",
+  "endpoint": "inbound",
+  "period": "2025-03",
+  "limit": 100
+}
+```
+
+## 세션 토큰 관리
+
+첫 로그인 이후 발급되는 세션 토큰으로, 자격증명 없이도 요청할 수 있습니다:
+
+```bash
+curl -X POST https://api.imprun.dev/v2/workflows \
+  -H "X-API-Key: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "scraping",
+    "params": {
+      "siteCode": "WEHAGO",
+      "sessionToken": "sess_xyz789abc",  // 이전 요청에서 받은 토큰
+      "group": "financial",
+      "endpoint": "balance-sheet"
+    }
+  }'
+```
+
+**응답에 포함된 새 토큰:**
+```json
+{
+  "result": {...},
+  "sessionToken": "sess_new_abc123xyz"  // 다음 요청에 사용
+}
+```
+
+## 실전 예제: 월별 매출 자동 수집
+
+```bash
+# 1월 매출
+curl -X POST https://api.imprun.dev/v2/workflows \
+  -H "X-API-Key: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "scraping",
+    "params": {
+      "siteCode": "WEHAGO",
+      "credentialId": "cred_abc123xyz",
+      "group": "financial",
+      "endpoint": "sales-report",
+      "period": "2025-01"
+    }
+  }'
+
+# 2월 매출
+# ... (month를 02로 변경)
+
+# 3월 매출
+# ... (month를 03으로 변경)
+```
+
+**자동화 스크립트 (Python):**
+```python
+import requests
+import json
+
+API_KEY = "your-api-key"
+CREDENTIAL_ID = "cred_abc123xyz"
+
+for month in range(1, 13):
+  response = requests.post(
+    "https://api.imprun.dev/v2/workflows",
+    headers={"X-API-Key": API_KEY},
+    json={
+      "type": "scraping",
+      "siteCode": "WEHAGO",
+      "params": {
+        "credentialId": CREDENTIAL_ID,
+        "group": "financial",
+        "endpoint": "sales-report",
+        "period": f"2025-{month:02d}"
+      }
+    }
+  )
+  print(f"Month {month}: {response.json()['id']}")
+```
+
+## 비용
+
+- **웨하고 조회 (기본)**: ₩500 (회당)
+- **세션 토큰 재사용**: ₩300 (회당)
+
+## 오류 처리
+
+**로그인 실패:**
+```json
+{
+  "status": "FAILED",
+  "error": "Authentication failed",
+  "advice": "자격증명을 확인하세요"
+}
+```
+
+**데이터 없음:**
+```json
+{
+  "status": "SUCCEEDED",
+  "result": null,
+  "message": "해당 기간의 데이터가 없습니다"
+}
+```
+
+## 다음 단계
+
+[API 스펙](../api-reference/workflows)에서 더 자세한 기술 정보를 확인하세요.

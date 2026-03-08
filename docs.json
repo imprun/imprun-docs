@@ -22,6 +22,21 @@
             ]
           },
           {
+            "group": "Getting Started",
+            "pages": [
+              "getting-started/setup",
+              "getting-started/first-request"
+            ]
+          },
+          {
+            "group": "사용 사례",
+            "pages": [
+              "use-cases/hometax-automation",
+              "use-cases/document-parsing",
+              "use-cases/scraping-workflow"
+            ]
+          },
+          {
             "group": "요금",
             "pages": [
               "pricing"
@@ -53,6 +68,18 @@
             "group": "개요",
             "pages": [
               "api-reference/introduction"
+            ]
+          },
+          {
+            "group": "Temporal Workflows",
+            "pages": [
+              "api-reference/workflows"
+            ]
+          },
+          {
+            "group": "인증서 릴레이",
+            "pages": [
+              "api-reference/cert-relay"
             ]
           },
           {
