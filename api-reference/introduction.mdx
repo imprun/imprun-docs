@@ -5,7 +5,6 @@ description: "imprun.dev API 엔드포인트 레퍼런스"
 
 <Warning>
   이 API는 현재 **베타** 단계입니다. 응답 스키마가 사전 공지 없이 변경될 수 있습니다.
-  프로덕션 연동 시 `parser_version` 필드를 확인하여 버전별 분기 처리를 권장합니다.
 </Warning>
 
 ## 환경
@@ -16,7 +15,7 @@ description: "imprun.dev API 엔드포인트 레퍼런스"
 | **Staging** | `https://staging.fn.imprun.dev` | 베타 기능 테스트, 개발용 |
 
 <Note>
-  Staging 환경은 최신 개발 빌드가 배포됩니다. 새로운 파서 버전이나 스키마 변경이 먼저 적용되므로, 사전 검증 용도로 활용하세요.
+  Staging 환경은 최신 개발 빌드가 배포됩니다. 새로운 기능이나 스키마 변경이 먼저 적용되므로, 사전 검증 용도로 활용하세요.
 </Note>
 
 ## 인증
@@ -36,58 +35,65 @@ Authorization: Bearer {keyId}.{secret}
 | `400` | 잘못된 요청 (파라미터 누락 등) |
 | `401` | 인증 실패 |
 | `403` | 잔액 부족 또는 계정 정지 |
-| `413` | 파일 크기 초과 |
-| `422` | 파싱 실패 (PDF에서 내용을 인식할 수 없음) |
+| `404` | 리소스를 찾을 수 없음 |
+| `409` | 충돌 (세션 만료, 로그인 진행 중 등) |
 | `500` | 서버 내부 오류 |
 
 ## API 목록
 
-### 자격증명 관리
+### 데이터 수집
 
-<Card
-  title="자격증명 관리"
-  icon="key"
-  href="/api-reference/credential-management"
->
-  외부 서비스(위하고, 홈택스) 로그인 자격증명을 안전하게 저장·관리합니다.
-</Card>
+<CardGroup cols={2}>
+  <Card
+    title="스크래핑"
+    icon="spider"
+    href="/api-reference/scraping"
+  >
+    위하고·홈택스 등 외부 서비스에서 데이터를 자동 수집합니다.
+  </Card>
+  <Card
+    title="워크플로우"
+    icon="arrows-spin"
+    href="/api-reference/workflows"
+  >
+    비동기 워크플로우 상태 조회, 추가 인증 응답, 취소를 처리합니다.
+  </Card>
+</CardGroup>
 
-### 세션
+### 인증 · 세션
 
-<Card
-  title="세션 관리"
-  icon="right-to-bracket"
-  href="/api-reference/sessions"
->
-  외부 서비스(홈택스, 위하고) 로그인 세션을 생성·관리합니다.
-</Card>
+<CardGroup cols={2}>
+  <Card
+    title="세션 관리"
+    icon="key"
+    href="/api-reference/sessions"
+  >
+    외부 서비스 로그인 세션을 생성하고 관리합니다.
+  </Card>
+  <Card
+    title="자격증명 관리"
+    icon="vault"
+    href="/api-reference/credential-management"
+  >
+    로그인 자격증명을 안전하게 저장·관리합니다.
+  </Card>
+</CardGroup>
 
-### 워크플로우
+### 문서 처리
 
-<Card
-  title="Temporal Workflows"
-  icon="rotate"
-  href="/api-reference/workflows"
->
-  스크래핑·문서 파싱 워크플로우를 생성하고 상태를 조회합니다.
-</Card>
-
-### 인증서 릴레이
-
-<Card
-  title="인증서 릴레이"
-  icon="shield-check"
-  href="/api-reference/cert-relay"
->
-  공동인증서를 모바일에서 서버로 안전하게 전달합니다.
-</Card>
-
-### PDF 파싱
-
-<Card
-  title="등기부등본 PDF 파서"
-  icon="file-pdf"
-  href="/api-reference/document-parser"
->
-  건물·토지·집합건물 등기부등본 PDF를 구조화된 JSON으로 변환합니다.
-</Card>
+<CardGroup cols={2}>
+  <Card
+    title="등기부등본 PDF 파서"
+    icon="file-pdf"
+    href="/api-reference/document-parser"
+  >
+    건물·토지·집합건물 등기부등본 PDF를 구조화된 JSON으로 변환합니다.
+  </Card>
+  <Card
+    title="인증서 릴레이"
+    icon="certificate"
+    href="/api-reference/cert-relay"
+  >
+    PC 공동인증서를 모바일로 안전하게 전송합니다.
+  </Card>
+</CardGroup>

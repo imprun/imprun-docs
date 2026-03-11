@@ -54,20 +54,11 @@
             ]
           },
           {
-            "group": "자격증명",
+            "group": "스크래핑",
             "pages": [
-              "api-reference/credential-management"
-            ]
-          },
-          {
-            "group": "세션",
-            "pages": [
-              "api-reference/sessions"
-            ]
-          },
-          {
-            "group": "Temporal Workflows",
-            "pages": [
+              "api-reference/credential-management",
+              "api-reference/sessions",
+              "api-reference/scraping",
               "api-reference/workflows"
             ]
           },

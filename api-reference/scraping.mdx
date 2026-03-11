@@ -1,0 +1,290 @@
+---
+title: '스크래핑'
+description: '외부 서비스에서 데이터를 자동으로 수집하는 API'
+---
+
+# 스크래핑
+
+위하고, 홈택스 등 외부 서비스에서 데이터를 자동으로 수집합니다.
+인증이 필요한 서비스는 먼저 [세션을 생성](/api-reference/sessions)한 뒤 `session_id`를 전달합니다.
+
+## 기본 흐름
+
+```
+1. 자격증명 등록 (1회)          POST /api/v1/credentials
+2. 세션 생성 (로그인)           POST /api/v1/sessions/{site}/login
+3. 스크래핑 요청                POST /api/v1/scraping/{site}/{endpoint}
+4. 결과 조회 (폴링)            GET  /api/v1/workflows/{workflow_id}
+```
+
+---
+
+## 스크래핑 시작
+
+```bash
+POST /api/v1/scraping/{site}/{endpoint}
+Content-Type: application/json
+Authorization: Bearer {keyId}.{secret}
+```
+
+### Path 파라미터
+
+| 파라미터 | 설명 | 예시 |
+|---------|------|------|
+| `site` | 서비스 코드 | `wehago`, `hometax` |
+| `endpoint` | 데이터 엔드포인트 | `master/companies`, `financial/balance-sheet` |
+
+### 요청 본문
+
+```json
+{
+  "session_id": "sess_LMCQe94B6mNaG1IcpNZ1n8X4",
+  "params": {
+    "from_date": "20250101",
+    "to_date": "20251231",
+    "gisu": 1,
+    "cno_ent": "1178754482",
+    "ccode": "30000"
+  }
+}
+```
+
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|------|------|
+| `session_id` | string | △ | [세션 ID](/api-reference/sessions) — 인증 필요 시 필수 |
+| `params` | object | | 엔드포인트별 파라미터 |
+
+### 응답 — `202 Accepted`
+
+```json
+{
+  "workflow_id": "scraping_wehago_01JFVQY2RW_5bc48d61",
+  "status": "processing",
+  "session_id": "sess_LMCQe94B6mNaG1IcpNZ1n8X4"
+}
+```
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `workflow_id` | string | 워크플로우 ID — [결과 조회](/api-reference/workflows#결과-조회)에 사용 |
+| `status` | string | `processing` |
+| `session_id` | string | 전달한 세션 ID (전달한 경우에만) |
+
+<Note>
+  스크래핑은 비동기로 처리됩니다. `workflow_id`로 [워크플로우 상태를 조회](/api-reference/workflows#결과-조회)하여 완료 여부를 확인하세요.
+</Note>
+
+---
+
+## WEHAGO 엔드포인트
+
+### 수임처 목록 조회
+
+로그인한 세무사 계정의 수임처(고객사) 목록을 조회합니다.
+재무 데이터를 조회하려면 먼저 이 엔드포인트로 수임처의 `cno_ent`와 `ccode`를 확인하세요.
+
+```bash
+POST /api/v1/scraping/wehago/master/companies
+```
+
+```json
+{
+  "session_id": "sess_xxx"
+}
+```
+
+`params`는 불필요합니다.
+
+### 재무상태표
+
+```bash
+POST /api/v1/scraping/wehago/financial/balance-sheet
+```
+
+```json
+{
+  "session_id": "sess_xxx",
+  "params": {
+    "from_date": "20250101",
+    "to_date": "20251231",
+    "gisu": 1,
+    "cno_ent": "1178754482",
+    "ccode": "30000"
+  }
+}
+```
+
+### 손익계산서
+
+```bash
+POST /api/v1/scraping/wehago/financial/income-statement
+```
+
+요청 본문은 재무상태표와 동일합니다.
+
+### 이익잉여금처분계산서
+
+```bash
+POST /api/v1/scraping/wehago/financial/retained-earnings
+```
+
+요청 본문은 재무상태표와 동일합니다.
+
+### 제조원가명세서
+
+```bash
+POST /api/v1/scraping/wehago/financial/cost-of-goods-manufactured
+```
+
+요청 본문은 재무상태표와 동일합니다.
+
+### financial `params` 공통 필드
+
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|------|------|
+| `from_date` | string | O | 조회 시작일 (`YYYYMMDD`) |
+| `to_date` | string | O | 조회 종료일 (`YYYYMMDD`) |
+| `gisu` | integer | O | 회계 기수 |
+| `cno_ent` | string | O | 수임처 번호 (`master/companies`에서 조회) |
+| `ccode` | string | O | 수임처 회사 코드 (`master/companies`에서 조회) |
+
+---
+
+## 에러
+
+| HTTP | 설명 |
+|------|------|
+| `400` | 필수 파라미터 누락 |
+| `401` | 인증 실패 |
+| `404` | 세션을 찾을 수 없음 |
+| `409` | 세션 만료 (`SESSION_EXPIRED`) |
+
+### `409 SESSION_EXPIRED`
+
+세션이 만료되었습니다. [세션을 다시 생성](/api-reference/sessions#세션-생성-로그인)하세요.
+
+```json
+{
+  "detail": {
+    "code": "SESSION_EXPIRED"
+  }
+}
+```
+
+---
+
+## 전체 예제
+
+### cURL
+
+```bash
+# 1. 자격증명 등록 (1회)
+curl -X POST https://prod.fn.imprun.dev/api/v1/credentials \
+  -H "Authorization: Bearer {keyId}.{secret}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider": "wehago",
+    "portal_id": "myaccount",
+    "password": "mypassword"
+  }'
+# → {"id": "cred_xxx", ...}
+
+# 2. 로그인
+curl -X POST https://prod.fn.imprun.dev/api/v1/sessions/wehago/login \
+  -H "Authorization: Bearer {keyId}.{secret}" \
+  -H "Content-Type: application/json" \
+  -d '{"credential_id": "cred_xxx"}'
+# → {"session_id": "sess_xxx", "workflow_id": "login_...", "status": "processing"}
+
+# 3. 로그인 완료 확인
+curl https://prod.fn.imprun.dev/api/v1/workflows/login_... \
+  -H "Authorization: Bearer {keyId}.{secret}"
+# → {"status": "completed", "session_id": "sess_xxx"}
+
+# 4. 수임처 목록 조회
+curl -X POST https://prod.fn.imprun.dev/api/v1/scraping/wehago/master/companies \
+  -H "Authorization: Bearer {keyId}.{secret}" \
+  -H "Content-Type: application/json" \
+  -d '{"session_id": "sess_xxx"}'
+# → {"workflow_id": "scraping_...", "status": "processing"}
+
+# 5. 결과 조회
+curl https://prod.fn.imprun.dev/api/v1/workflows/scraping_... \
+  -H "Authorization: Bearer {keyId}.{secret}"
+# → {"status": "completed", "result": [...]}
+
+# 6. 재무상태표 요청
+curl -X POST https://prod.fn.imprun.dev/api/v1/scraping/wehago/financial/balance-sheet \
+  -H "Authorization: Bearer {keyId}.{secret}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "session_id": "sess_xxx",
+    "params": {
+      "from_date": "20250101",
+      "to_date": "20251231",
+      "gisu": 1,
+      "cno_ent": "1178754482",
+      "ccode": "30000"
+    }
+  }'
+```
+
+### Python
+
+```python
+import requests
+import time
+
+BASE = "https://prod.fn.imprun.dev"
+HEADERS = {"Authorization": "Bearer {keyId}.{secret}"}
+
+
+def wait_workflow(workflow_id: str) -> dict:
+    """워크플로우 완료 대기."""
+    while True:
+        res = requests.get(
+            f"{BASE}/api/v1/workflows/{workflow_id}", headers=HEADERS
+        ).json()
+        if res["status"] in ("completed", "failed"):
+            return res
+        time.sleep(2)
+
+
+# 1. 로그인
+login = requests.post(
+    f"{BASE}/api/v1/sessions/wehago/login",
+    headers=HEADERS,
+    json={"credential_id": "cred_xxx"},
+).json()
+
+session_id = login["session_id"]
+if login["status"] != "active":
+    wait_workflow(login["workflow_id"])
+
+# 2. 수임처 목록 조회
+wf = requests.post(
+    f"{BASE}/api/v1/scraping/wehago/master/companies",
+    headers=HEADERS,
+    json={"session_id": session_id},
+).json()
+companies = wait_workflow(wf["workflow_id"])["result"]
+
+# 3. 재무상태표 요청
+target = companies[0]  # cno_ent, ccode 확인
+wf2 = requests.post(
+    f"{BASE}/api/v1/scraping/wehago/financial/balance-sheet",
+    headers=HEADERS,
+    json={
+        "session_id": session_id,
+        "params": {
+            "from_date": "20250101",
+            "to_date": "20251231",
+            "gisu": 1,
+            "cno_ent": target["cno_ent"],
+            "ccode": target["ccode"],
+        },
+    },
+).json()
+result = wait_workflow(wf2["workflow_id"])
+print(result["result"])
+```
