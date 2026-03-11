@@ -54,8 +54,10 @@
             ]
           },
           {
-            "group": "Temporal Workflows",
+            "group": "스크래핑",
             "pages": [
+              "api-reference/credential-management",
+              "api-reference/sessions",
               "api-reference/workflows"
             ]
           },

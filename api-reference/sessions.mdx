@@ -1,0 +1,298 @@
+---
+title: '세션 관리'
+description: '외부 서비스 로그인 세션을 생성하고 관리하는 API'
+---
+
+# 세션 관리
+
+자격증명을 사용하여 외부 서비스(위하고, 홈택스)에 로그인하고, 생성된 세션을 재사용합니다.
+세션이 활성화되면 여러 스크래핑 요청에서 반복 로그인 없이 사용할 수 있습니다.
+
+## 흐름
+
+```
+1. 자격증명 등록 (1회)             POST /api/v1/credentials
+2. 세션 생성 (로그인)              POST /api/v1/sessions/{site}/login
+3. 워크플로우 상태 조회 (폴링)     GET  /api/v1/workflows/{workflow_id}
+4. (필요 시) 추가 인증 응답        POST /api/v1/workflows/{workflow_id}/challenge
+5. 세션으로 데이터 수집            POST /api/v1/scraping/{site}/{endpoint}  ← session_id 지정
+```
+
+<Note>
+  세션 생성은 **비동기**입니다. 로그인 워크플로우가 시작되고 `workflow_id`가 반환됩니다.
+  [워크플로우 상태 조회](/api-reference/workflows#결과-조회)로 완료 여부를 확인하세요.
+</Note>
+
+---
+
+## 세션 생성 (로그인)
+
+자격증명으로 외부 서비스에 로그인하여 세션을 생성합니다.
+
+```bash
+POST /api/v1/sessions/{site}/login
+Content-Type: application/json
+Authorization: Bearer {keyId}.{secret}
+```
+
+### Path 파라미터
+
+| 파라미터 | 설명 |
+|---------|------|
+| `site` | 서비스 코드 (`wehago`, `hometax`) |
+
+### 요청 본문
+
+`credential_id` 또는 `login_params` 중 하나만 전달합니다.
+
+<Tabs>
+  <Tab title="자격증명 ID로 로그인">
+```json
+{
+  "credential_id": "cred_57ea61f05c79"
+}
+```
+  </Tab>
+  <Tab title="직접 로그인 파라미터">
+```json
+{
+  "login_params": {
+    "login_type": "password",
+    "portal_id": "user@wehago.com",
+    "password": "password123"
+  }
+}
+```
+  </Tab>
+</Tabs>
+
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|------|------|
+| `credential_id` | string | △ | [자격증명 ID](/api-reference/credential-management) |
+| `login_params` | object | △ | 로그인 파라미터 (login_type 필수) |
+
+<Warning>
+  `credential_id`와 `login_params`는 **상호배타**입니다. 둘 다 전달하거나 둘 다 생략하면 `400` 에러가 반환됩니다.
+  보안을 위해 `credential_id` 사용을 권장합니다.
+</Warning>
+
+### 응답 — `202 Accepted` (로그인 시작)
+
+```json
+{
+  "session_id": "sess_LMCQe94B6mNaG1IcpNZ1n8X4",
+  "workflow_id": "login_wehago_01JFVQY2RW_aa29f2fd",
+  "status": "processing"
+}
+```
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `session_id` | string | 세션 핸들 — 로그인 완료 후 스크래핑에 사용 |
+| `workflow_id` | string | 로그인 워크플로우 ID — 상태 조회에 사용 |
+| `status` | string | `processing` |
+
+### 응답 — `202 Accepted` (기존 세션 재사용)
+
+동일한 자격증명으로 이미 활성 세션이 있으면 즉시 반환됩니다.
+
+```json
+{
+  "session_id": "sess_LMCQe94B6mNaG1IcpNZ1n8X4",
+  "status": "active",
+  "message": "session already exists"
+}
+```
+
+### 로그인 완료 확인
+
+`workflow_id`로 워크플로우 상태를 폴링합니다.
+
+```bash
+GET /api/v1/workflows/{workflow_id}
+Authorization: Bearer {keyId}.{secret}
+```
+
+```json
+{
+  "status": "completed",
+  "result": null,
+  "session_id": "sess_LMCQe94B6mNaG1IcpNZ1n8X4"
+}
+```
+
+`status`가 `completed`이면 `session_id`를 스크래핑에 사용할 수 있습니다.
+
+---
+
+## 세션 상태 조회
+
+```bash
+GET /api/v1/sessions/{site}/{session_id}
+Authorization: Bearer {keyId}.{secret}
+```
+
+### 응답 — `200 OK`
+
+```json
+{
+  "session_id": "sess_LMCQe94B6mNaG1IcpNZ1n8X4",
+  "site": "wehago",
+  "login_type": "password",
+  "active": true,
+  "ttl_seconds": 3540,
+  "created_at": "2026-03-11T12:08:45Z"
+}
+```
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `session_id` | string | 세션 핸들 |
+| `site` | string | 서비스 코드 |
+| `login_type` | string | 로그인 방식 (`password`, `cert` 등) |
+| `active` | boolean | 세션 활성 여부 |
+| `ttl_seconds` | integer | 남은 TTL (초) |
+| `created_at` | string | 생성 시각 (RFC3339) |
+
+---
+
+## 세션 삭제
+
+```bash
+DELETE /api/v1/sessions/{site}/{session_id}
+Authorization: Bearer {keyId}.{secret}
+```
+
+### 응답 — `200 OK`
+
+```json
+{
+  "status": "deleted",
+  "session_id": "sess_LMCQe94B6mNaG1IcpNZ1n8X4"
+}
+```
+
+<Note>
+  세션 핸들(SessionRef)만 삭제됩니다. 동일 자격증명으로 다시 로그인하면 내부 캐시가 남아있는 동안 즉시 새 세션이 발급됩니다.
+</Note>
+
+---
+
+## 에러 코드
+
+| HTTP | 설명 |
+|------|------|
+| `400` | `credential_id`와 `login_params` 동시 전달 또는 둘 다 생략 |
+| `400` | 자격증명의 site와 요청 site 불일치 |
+| `401` | 인증 실패 |
+| `404` | 세션 또는 자격증명을 찾을 수 없음 |
+| `409` | 동일 자격증명으로 로그인 진행 중 (`LOGIN_IN_PROGRESS`) |
+| `503` | 페이로드 암호화가 설정되지 않음 |
+
+### `409 LOGIN_IN_PROGRESS`
+
+동일 자격증명으로 다른 로그인이 이미 진행 중일 때 반환됩니다. `retry_after_ms` 후 재시도하세요.
+
+```json
+{
+  "detail": {
+    "code": "LOGIN_IN_PROGRESS",
+    "session_id": "sess_...",
+    "retry_after_ms": 1000
+  }
+}
+```
+
+---
+
+## 전체 예제
+
+### WEHAGO 로그인 → 데이터 수집
+
+```bash
+# 1. 자격증명으로 로그인
+curl -X POST https://prod.fn.imprun.dev/api/v1/sessions/wehago/login \
+  -H "Authorization: Bearer {keyId}.{secret}" \
+  -H "Content-Type: application/json" \
+  -d '{"credential_id": "cred_57ea61f05c79"}'
+# → {"session_id": "sess_xxx", "workflow_id": "login_wehago_...", "status": "processing"}
+
+# 2. 로그인 완료 대기
+curl https://prod.fn.imprun.dev/api/v1/workflows/login_wehago_... \
+  -H "Authorization: Bearer {keyId}.{secret}"
+# → {"status": "completed", "session_id": "sess_xxx"}
+
+# 3. 세션으로 수임처 조회
+curl -X POST https://prod.fn.imprun.dev/api/v1/scraping/wehago/master/companies \
+  -H "Authorization: Bearer {keyId}.{secret}" \
+  -H "Content-Type: application/json" \
+  -d '{"session_id": "sess_xxx"}'
+```
+
+### Python
+
+```python
+import requests
+import time
+
+BASE = "https://prod.fn.imprun.dev"
+HEADERS = {"Authorization": "Bearer {keyId}.{secret}"}
+
+# 1. 로그인
+login = requests.post(
+    f"{BASE}/api/v1/sessions/wehago/login",
+    headers=HEADERS,
+    json={"credential_id": "cred_57ea61f05c79"},
+).json()
+
+session_id = login["session_id"]
+
+# 이미 활성 세션이면 바로 사용
+if login["status"] != "active":
+    # 2. 로그인 완료 대기
+    workflow_id = login["workflow_id"]
+    while True:
+        res = requests.get(
+            f"{BASE}/api/v1/workflows/{workflow_id}", headers=HEADERS
+        ).json()
+        if res["status"] == "completed":
+            break
+        if res["status"] == "failed":
+            raise Exception("로그인 실패")
+        # OTP 등 추가 인증 필요
+        if res.get("challenge"):
+            otp = input(f"{res['challenge']['message']}: ")
+            requests.post(
+                f"{BASE}/api/v1/workflows/{workflow_id}/challenge",
+                headers=HEADERS,
+                json={
+                    "challenge_id": res["challenge"]["id"],
+                    "data": {"otp": otp},
+                },
+            )
+        time.sleep(2)
+
+# 3. 세션으로 스크래핑
+wf = requests.post(
+    f"{BASE}/api/v1/scraping/wehago/master/companies",
+    headers=HEADERS,
+    json={"session_id": session_id},
+).json()
+
+# 4. 결과 대기
+while True:
+    res = requests.get(
+        f"{BASE}/api/v1/workflows/{wf['workflow_id']}", headers=HEADERS
+    ).json()
+    if res["status"] in ("completed", "failed"):
+        break
+    time.sleep(2)
+
+print(res["result"])
+```
+
+---
+
+## 요금
+
+세션 관리 API는 **무료**입니다. 세션을 사용한 스크래핑 요청에만 과금됩니다.
