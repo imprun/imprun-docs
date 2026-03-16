@@ -85,10 +85,6 @@
           {
             "group": "wehago",
             "openapi": "https://imprun.dev/api/v1/openapi/wehago"
-          },
-          {
-            "group": "wehago2",
-            "openapi": "https://imprun.dev/api/v1/openapi/wehago"
           }
         ]
       }
